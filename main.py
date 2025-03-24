@@ -1,5 +1,5 @@
 from PIL import Image, ImageDraw
-from collections import Counter
+from collections import Counter, namedtuple
 import heapq
 import sys
 
@@ -46,16 +46,20 @@ def rounded_rectangle(draw, box, radius, color):
     draw.rectangle((l + d, t, r - d, b), color)
 
 
-class Quad(object):
-    def __init__(self, model, box, depth):
-        self.model = model
-        self.box = box
-        self.depth = depth
+class Quad(namedtuple('Quad', 'model box depth')):
+    # as per https://github.com/fogleman/Quads/pull/5/files (fix heapq comp)
+    # def __init__(self, model, box, depth):
+    def __new__(cls, model, box, depth):
+        self = super(Quad, cls).__new__(cls, model, box, depth)
+        # self.model = model
+        # self.box = box
+        # self.depth = depth
         hist = self.model.im.crop(self.box).histogram()
         self.color, self.error = color_from_histogram(hist)
         self.leaf = self.is_leaf()
         self.area = self.compute_area()
         self.children = []
+        return self
 
     def is_leaf(self):
         l, t, r, b = self.box
@@ -119,12 +123,12 @@ class Model:
             self.push(child)
             self.error_sum += child.error * child.area
 
-    def render(self, path, max_depth=None, padding=PADDING):
+    def render(self, path, max_depth=None, padding=PADDING, fill_colour=FILL_COLOR):
         m = OUTPUT_SCALE
         dx, dy = (padding, padding)
         im = Image.new('RGB', (self.width * m + dx, self.height * m + dy))
         draw = ImageDraw.Draw(im)
-        draw.rectangle((0, 0, self.width * m, self.height * m), FILL_COLOR)
+        draw.rectangle((0, 0, self.width * m, self.height * m), fill_colour)
         for quad in self.root.get_leaf_nodes(max_depth):
             l, t, r, b = quad.box
             box = (l * m + dx, t * m + dy, r * m - 1, b * m - 1)
@@ -142,14 +146,16 @@ class Model:
 
 def main():
     args = sys.argv[1:]
-    if len(args) != 3:
-        print('Usage: python main.py <input_image> <iterations> <padding>')
+    if len(args) != 6:
+        print('Usage: python main.py <input_image> <iterations> <padding> <padding r g b>')
         return
     model = Model(args[0])
     iterations = int(args[1])
     if iterations == 0:
         iterations = ITERATIONS
     padding = int(args[2])
+    rgb = (int(args[3]), int(args[4]), int(args[5]))
+    print(rgb)
     previous = None
     for i in range(iterations):
         error = model.average_error()
@@ -159,7 +165,7 @@ def main():
                 model.render('frames/%06d.png' % i)
             previous = error
         model.split()
-    model.render('output.png', padding=padding)
+    model.render('output.png', padding=padding, fill_colour=rgb)
     print('-' * 32)
     depth = Counter(x.depth for x in model.quads)
     for key in sorted(depth):
