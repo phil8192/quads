@@ -1,4 +1,6 @@
 mkdir -p frames/
-rm frames/*
-python main.py $1
+if [ "$(ls -1q frames/ |wc -l)" -gt 0 ] ;then
+  rm frames/*
+fi
+python main.py "$1" "$2" "$3"
 ./gif.sh

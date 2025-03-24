@@ -10,8 +10,8 @@ MODE_ROUNDED_RECTANGLE = 3
 MODE = MODE_RECTANGLE
 ITERATIONS = 1024
 LEAF_SIZE = 4
-PADDING = 1
-FILL_COLOR = (0, 0, 0)
+PADDING = 0
+FILL_COLOR = (255, 255, 255)
 SAVE_FRAMES = False
 ERROR_RATE = 0.5
 AREA_POWER = 0.25
@@ -119,9 +119,9 @@ class Model:
             self.push(child)
             self.error_sum += child.error * child.area
 
-    def render(self, path, max_depth=None):
+    def render(self, path, max_depth=None, padding=PADDING):
         m = OUTPUT_SCALE
-        dx, dy = (PADDING, PADDING)
+        dx, dy = (padding, padding)
         im = Image.new('RGB', (self.width * m + dx, self.height * m + dy))
         draw = ImageDraw.Draw(im)
         draw.rectangle((0, 0, self.width * m, self.height * m), FILL_COLOR)
@@ -142,12 +142,16 @@ class Model:
 
 def main():
     args = sys.argv[1:]
-    if len(args) != 1:
-        print('Usage: python main.py input_image')
+    if len(args) != 3:
+        print('Usage: python main.py <input_image> <iterations> <padding>')
         return
     model = Model(args[0])
+    iterations = int(args[1])
+    if iterations == 0:
+        iterations = ITERATIONS
+    padding = int(args[2])
     previous = None
-    for i in range(ITERATIONS):
+    for i in range(iterations):
         error = model.average_error()
         if previous is None or previous - error > ERROR_RATE:
             print(i, error)
@@ -155,7 +159,7 @@ def main():
                 model.render('frames/%06d.png' % i)
             previous = error
         model.split()
-    model.render('output.png')
+    model.render('output.png', padding)
     print('-' * 32)
     depth = Counter(x.depth for x in model.quads)
     for key in sorted(depth):
