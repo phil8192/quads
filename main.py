@@ -20,8 +20,8 @@ OUTPUT_SCALE = 1
 
 def weighted_average(hist):
     total = sum(hist)
-    value = sum(i * x for i, x in enumerate(hist)) / total
-    error = sum(x * (value - i) ** 2 for i, x in enumerate(hist)) / total
+    value = sum(i * x for i, x in enumerate(hist)) / total if total > 0 else 0
+    error = sum(x * (value - i) ** 2 for i, x in enumerate(hist)) / total if total > 0 else 0
     error = error ** 0.5
     return value, error
 
