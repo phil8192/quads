@@ -14,7 +14,7 @@ PADDING = 0
 FILL_COLOR = (255, 255, 255)
 SAVE_FRAMES = False
 ERROR_RATE = 0.5
-AREA_POWER = 0.25
+AREA_POWER = 0.01
 OUTPUT_SCALE = 1
 
 
@@ -93,7 +93,8 @@ class Quad(namedtuple('Quad', 'model box depth')):
 
 
 class Model:
-    def __init__(self, path):
+    def __init__(self, path, area_power=AREA_POWER):
+        self.area_power = area_power
         self.im = Image.open(path).convert('RGB')
         self.width, self.height = self.im.size
         self.heap = []
@@ -109,7 +110,7 @@ class Model:
         return self.error_sum / (self.width * self.height)
 
     def push(self, quad):
-        score = -quad.error * (quad.area ** AREA_POWER)
+        score = -quad.error * (quad.area ** self.area_power)
         heapq.heappush(self.heap, (quad.leaf, score, quad))
 
     def pop(self):
@@ -146,10 +147,10 @@ class Model:
 
 def main():
     args = sys.argv[1:]
-    if len(args) != 6:
-        print('Usage: python main.py <input_image> <iterations> <padding> <padding r g b>')
+    if len(args) != 7:
+        print('Usage: python main.py <input_image> <iterations> <padding> <padding r g b> <area_power ~ 0.25>')
         return
-    model = Model(args[0])
+    model = Model(args[0], float(args[6]))
     iterations = int(args[1])
     if iterations == 0:
         iterations = ITERATIONS
