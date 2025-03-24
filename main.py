@@ -159,7 +159,7 @@ def main():
                 model.render('frames/%06d.png' % i)
             previous = error
         model.split()
-    model.render('output.png', padding)
+    model.render('output.png', padding=padding)
     print('-' * 32)
     depth = Counter(x.depth for x in model.quads)
     for key in sorted(depth):
